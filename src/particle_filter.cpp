@@ -53,9 +53,9 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 
 	for (auto &particle : particles) {
 
-		if (abs(yaw_rate) < 0.0001) {
-			particle.x += velocity * cos(particle.theta);
-			particle.y += velocity * sin(particle.theta);
+		if (abs(yaw_rate) < numeric_limits<double>::epsilon()) {
+			particle.x += velocity * cos(particle.theta) * delta_t;
+			particle.y += velocity * sin(particle.theta) * delta_t;
 		}
 		else {
 			particle.x += (velocity / yaw_rate)*(sin(particle.theta + (yaw_rate*delta_t)) - sin(particle.theta));
@@ -83,7 +83,7 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
 		double minDistance = numeric_limits<double>::max();
 		for (const auto &measurement : predicted) {
 			double distance = dist(observation.x, observation.y, measurement.x, measurement.y);
-			if (minDistance - distance < 0.0001) {
+			if ((distance - minDistance) < numeric_limits<double>::epsilon()) {
 				minDistance = distance;
 				observation.id = measurement.id;
 			}
@@ -112,9 +112,9 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 			double particleLandmarkDistance = dist(particle.x, particle.y, 
 													static_cast<double>(mapLandmark.x_f), static_cast<double>(mapLandmark.y_f));
 
-			if (particleLandmarkDistance - sensor_range < 0.0001)
+			if ((particleLandmarkDistance - sensor_range) < numeric_limits<double>::epsilon())
 				predictedLandmarks.push_back(
-					LandmarkObs({id:mapLandmark.id_i, x:static_cast<double>(mapLandmark.x_f), y: static_cast<double>(mapLandmark.x_f)}));
+					LandmarkObs({id:mapLandmark.id_i, x:static_cast<double>(mapLandmark.x_f), y: static_cast<double>(mapLandmark.y_f)}));
 		}
 
 		vector<LandmarkObs> observedLandmarks;
@@ -151,7 +151,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	for (const auto &particle : particles)
 		sumWeights += particle.weight;
 
-	if (sumWeights > 0.0001) {
+	if (sumWeights > numeric_limits<double>::epsilon()) {
 		for (auto &particle : particles)
 			particle.weight /= particle.weight;
 	}
@@ -163,7 +163,7 @@ void ParticleFilter::resample() {
 	//   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
 
 	vector<double> particleWeights;
-	for (const auto&particle : particles)
+	for (const auto &particle : particles)
 		particleWeights.push_back(particle.weight);
 
 	discrete_distribution<int> weightedDistribution(particleWeights.begin(), particleWeights.end());
@@ -184,10 +184,6 @@ Particle ParticleFilter::SetAssociations(Particle& particle, const std::vector<i
     // associations: The landmark id that goes along with each listed association
     // sense_x: the associations x mapping already converted to world coordinates
     // sense_y: the associations y mapping already converted to world coordinates
-
-	particle.associations.clear();
-	particle.sense_x.clear();
-	particle.sense_y.clear();
 
     particle.associations= associations;
     particle.sense_x = sense_x;
