@@ -83,7 +83,7 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
 		double minDistance = numeric_limits<double>::max();
 		for (const auto &measurement : predicted) {
 			double distance = dist(observation.x, observation.y, measurement.x, measurement.y);
-			if ((distance - minDistance) < numeric_limits<double>::epsilon()) {
+			if (distance  < minDistance) {
 				minDistance = distance;
 				observation.id = measurement.id;
 			}
@@ -153,7 +153,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 
 	if (sumWeights > numeric_limits<double>::epsilon()) {
 		for (auto &particle : particles)
-			particle.weight /= particle.weight;
+			particle.weight /= sumWeights;
 	}
 }
 
@@ -173,8 +173,6 @@ void ParticleFilter::resample() {
 		resampledParticles.push_back(particles[weightedDistribution(gen)]);
 
 	particles = resampledParticles;
-	for (auto& particle : particles)
-		particle.weight = 1.0;
 }
 
 Particle ParticleFilter::SetAssociations(Particle& particle, const std::vector<int>& associations, 
